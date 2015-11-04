@@ -1,0 +1,36 @@
+{
+	"name": "ryosukemiyazawa/lasaphp",
+	"description": "Lasa PHP Framework",
+	"keywords": ["php", "framework"],
+	"type": "library",
+	"license": "MIT",
+	"homepage": "https://github.com/ryosukemiyazawa/lasaphp",
+	"authors": [
+		{
+			"name": "Ryosuke Miyazawa",
+			"email": "ryosukemiyazawa@gmail.com"
+		}
+	],
+	"require-dev": {
+			"phpunit/phpunit": "3.7.*"
+	},
+	"autoload": {
+		"psr-4": {
+			"lasa\\": "Lasa/src/"
+		},
+		"files" : [
+			"Lasa/src/helpers.php"
+		]
+	},
+	"scripts": {
+		"post-install-cmd": [
+			""
+		],
+		"post-update-cmd": [
+			""
+		]
+	},
+	"bin": [
+		"magluto"
+	]
+}
