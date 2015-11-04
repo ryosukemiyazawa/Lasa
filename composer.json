@@ -1,10 +1,10 @@
 {
-	"name": "ryosukemiyazawa/lasaphp",
+	"name": "ryosukemiyazawa/lasa",
 	"description": "Lasa PHP Framework",
 	"keywords": ["php", "framework"],
 	"type": "library",
 	"license": "MIT",
-	"homepage": "https://github.com/ryosukemiyazawa/lasaphp",
+	"homepage": "https://github.com/ryosukemiyazawa/Lasa",
 	"authors": [
 		{
 			"name": "Ryosuke Miyazawa",
