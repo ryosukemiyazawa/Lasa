@@ -4,13 +4,23 @@
  */
 namespace lasa\view\builder;
 
+/**
+ * PHP混じりのコードをパースして次の３つに分割する
+ * head 宣言部
+ * code PHPコード
+ * body HTML部分
+ */
 class PHPTokenParser{
 	
 	private $index = 0;
 	private $tokens = [];
 	
+	private $_head;
 	private $_code;
+	private $_body;
+	
 	private $_use_class = [];
+	
 	
 	/**
 	 * @return PHPTokenParser
@@ -34,39 +44,67 @@ class PHPTokenParser{
 	}
 	
 	function parse(){
-		$res = [];
+		$head_lines = [];
+		$code_lines = [];
+		$body_lines = [];
+		
 		$use_class = [];
 		
+		$state = "head";
+		$line = 0;
+		$docComment = null;
 		while($this->hasNext()){
 			$token = $this->next();
+			$line++;
 			
 			if(!is_array($token)){
-				$res[] = $token;
+				if($state == "head"){
+					$head_lines[] = $token;
+				}else if($state = "code"){
+					$code_lines[] = $token;
+				}else if($state == "body"){
+					$body_lines[] = $token;
+				}
+				
 				continue;
 			}
 			
 			$type = $token[0];
 			$code = $token[1];
 			
+			//use句
 			if($type == T_USE){
 				$className = $this->nextToEndLine();
 				if($className){
 					list($baseClassName, $fullClassName) = $this->explodeUseCode($className);
 					$use_class[$baseClassName] = $fullClassName;
-					continue;
 				}
 			}
 			
-			if($type == T_COMMENT){
-				continue;
+			//最初のreturnからはcode句
+			if($state == "head" && $type == T_RETURN){
+				$state = "code";
 			}
 			
-			$res[] = $code;
+			if($state == "head"){
+				$head_lines[] = $code;
+			}else if($state == "code"){
+				$code_lines[] = $code;
+			}else if($state == "body"){
+				$body_lines[] = $code;
+			}
+			
+			//最初のclose tagからbody句になります
+			if($state != "body" && $type == T_CLOSE_TAG){
+				$state = "body";
+			}
 		}
 		
-		
-		$this->_code = implode("", $res);
+		$this->_head = implode("", $head_lines);
+		$this->_code = implode("", $code_lines);
+		$this->_body = implode("", $body_lines);
 		$this->_use_class = $use_class;
+		
 	}
 	
 	/**
@@ -77,7 +115,7 @@ class PHPTokenParser{
 	function cleanup($code = null, $options = []){
 		
 		if(!$code){
-			$code = $this->_code;
+			$code = $this->_head . $this->_code . $this->_body;
 		}
 		
 		$use_class = $this->_use_class;
@@ -85,7 +123,7 @@ class PHPTokenParser{
 		/*
 		 * tabとかをどうするかはここで決める
 		 */
-		if(isset($option["clean_tab"]) && $option["clean_tab"]){
+		if(isset($options["clean_tab"]) && $options["clean_tab"]){
 			//文頭のtab、文末のtabを除く
 			$code = preg_replace('#^[\t]+#m', "", $code);
 			$code = preg_replace('#[\t]+$#m', "", $code);
@@ -143,6 +181,35 @@ class PHPTokenParser{
 	
 	function hasNext(){
 		return ($this->index < $this->count);
+	}
+	
+	function getHead(){
+		return $this->cleanup($this->_head);
+	}
+	
+	function getCode(){
+		return $this->cleanup($this->_code);
+	}
+	
+	function getBody(){
+		return $this->cleanup($this->_body);
+	}
+	
+	function getDocComment(){
+		$tokens = token_get_all($this->_head);
+		$docComment = [];
+		foreach($tokens as $token){
+			if(!is_array($token)){
+				continue;
+			}
+			$type = $token[0];
+			$code = $token[1];
+			
+			if($type == T_COMMENT || $type == T_DOC_COMMENT){
+				$docComment[] = $code;
+			}
+		}
+		return implode("", $docComment);
 	}
 	
 	/* helper */

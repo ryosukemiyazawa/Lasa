@@ -21,6 +21,11 @@ class FileLoader implements LoaderInterface{
 	public function getBuilder($name) {
 		list($scriptPath, $templatePath) = $this->getPath($name);
 		
+		//存在しない場合
+		if(!file_exists($scriptPath)){
+			return null;
+		}
+		
 		//dummy view object
 		$view = new BlankRender();
 		
@@ -30,12 +35,12 @@ class FileLoader implements LoaderInterface{
 		ob_end_clean();
 		
 		if(is_array($res)){
+			$compiler = new \lasa\view\builder\StandardViewBuilder($res);
 			if(file_exists($templatePath)){
-				$template = file_get_contents($templatePath);
+				$compiler->loadTemplate($templatePath);
 			}else{
-				$template = \lasa\view\builder\StandardViewBuilder::loadTemplate($scriptPath);
+				$compiler->loadTemplate($scriptPath);
 			}
-			$compiler = new \lasa\view\builder\StandardViewBuilder($res, $template);
 			return $compiler;
 		}
 		

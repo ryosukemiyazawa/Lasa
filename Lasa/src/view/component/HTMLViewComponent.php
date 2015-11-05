@@ -20,6 +20,8 @@ class HTMLViewComponent extends HTMLView {
 	public $_holderName = "view";
 
 	public $_layout = null;
+	
+	public $_layoutParams = [];
 
 	static $EMPTY_TAG_LIST = array(
 		"area",
@@ -179,7 +181,7 @@ class HTMLViewComponent extends HTMLView {
 		$this->_applyFunc = $func;
 	
 	}
-
+	
 	/**
 	 * コンパイル実行
 	 *
@@ -233,6 +235,12 @@ class HTMLViewComponent extends HTMLView {
 		
 		$prefix = "";
 		
+		//レイアウトの指定
+		if($this->_layout || $this->_layoutParams){
+			$prefix .= '$' . $this->_holderName . "->layout(" . var_export($this->_layout, true) . ", ".var_export($this->_layoutParams, true) .", false);";
+		}
+		
+		//forgeFunc
 		if($this->_forgeFunc){
 			$code = $this->getClosureCode($this->_forgeFunc);
 			$prefix .= '$' . $this->_holderName . "->forge(" . $code . ");";
@@ -285,6 +293,7 @@ class HTMLViewComponent extends HTMLView {
 		$EMPTY_TAG_LIST = self::$EMPTY_TAG_LIST;
 		
 		$counter = 0;
+		$markers = [];
 		while(true){
 			$counter++;
 			$whiteSpace = ($component->isWrappedComponent()) ? "[ \t]*" : "";
@@ -404,13 +413,20 @@ class HTMLViewComponent extends HTMLView {
 				$component->_optionValue = $option_value;
 				
 				$replace = $component->getContent($id, $tag, $inner, $attributes);
+				$marker = "@@" . md5($id . "-" . $start . "-" . strlen($outer)) . "@@";
+				$markers[$marker] = $replace;
 				
 				// １回だけ変換かけるためにsubstr_replaceを利用
 				// $content = str_replace($outer, $replace, $content, 1);
-				$content = substr_replace($content, $replace, $start, strlen($outer));
-			
+				$content = substr_replace($content, $marker, $start, strlen($outer));
+				
 			}
 		
+		}
+		
+		//マーカー部分を入れ替える
+		foreach ($markers as $key => $value){
+			$content = str_replace($key, $value, $content);
 		}
 		
 		$this->_template = $content;
@@ -562,6 +578,14 @@ class HTMLViewComponent extends HTMLView {
 	function layout($layoutName) {
 		$this->_layout = $layoutName;
 		return $this;
+	}
+	
+	/**
+	 * レイアウト変数を登録する
+	 * @param array $params
+	 */
+	function layoutParams($params){
+		$this->_layoutParams = $params;
 	}
 
 }
@@ -858,6 +882,10 @@ class ViewComponent extends OutputComponent {
 
 	function getContent($id, $tag, $inner, $attributes) {
 		
+		if(!$this->view){
+			return $this->getDynamicViewContent($id, $tag, $inner, $attributes);
+		}
+		
 		$holderName = "view";
 		$engine = \lasa\view\Engine::currentEngine();
 		$loader = $engine->getLoader();
@@ -894,6 +922,22 @@ class ViewComponent extends OutputComponent {
 		}
 		
 		return $result;
+	}
+	
+	/**
+	 * 動的にViewを取得する場合
+	 * @return string
+	 */
+	function getDynamicViewContent($id, $tag, $inner, $attributes){
+		$res = [];
+		$res[] = '<?php call_user_func(function($values){ ';
+		$res[] = 'if(!$values)return;';
+		$res[] = 'if(is_string($values))$values=[$values];';
+		$res[] = '$view=\lasa\view\Engine::currentEngine()->load(array_shift($values), $values);';
+		$res[] = 'if(!$view)return;';
+		$res[] = '$view->display();';
+		$res[] = '}, $' . $this->_holderName . '->get("'.$id.'")); ?>';
+		return implode("", $res);
 	}
 
 }
@@ -1051,7 +1095,7 @@ class SelectComponent extends HTMLFormElementComponent {
 			$scripts[] = '<?php ';
 			$scripts[] = '$_key=$' . $this->_holderName . '->get("' . $id . '");';
 			$scripts[] = 'foreach($' . $this->_holderName . '->getArray("' . $id . '@items") as $key => $value){ ';
-			$scripts[] = '$selected=($key===$_key)?" selected":"";';
+			$scripts[] = '$selected=(strcmp($key,$_key)==0)?" selected":"";';
 			$scripts[] = '$key=htmlspecialchars($key);$value=htmlspecialchars($value);';
 			$scripts[] = 'echo "<option value=\"${key}\"${selected}>${value}</option>";';
 			$scripts[] = '} ';

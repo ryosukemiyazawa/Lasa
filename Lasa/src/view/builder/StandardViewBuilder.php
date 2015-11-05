@@ -11,10 +11,17 @@ class StandardViewBuilder extends ViewBuilder{
 
 	private $conf = [];
 	private $template;
+	private $annotations = [];
 
-	public function __construct(array $config, $template){
+	public function __construct(array $config, $template = null){
 		$this->conf = $config;
-		$this->template = $template;
+		if($template){
+			$this->template = $template;
+		}
+	}
+	
+	public function loadTemplate($scriptPath){
+		$this->template = $this->parseTemplate($scriptPath);
 	}
 
 	/**
@@ -24,15 +31,61 @@ class StandardViewBuilder extends ViewBuilder{
 		$obj = new HTMLViewComponent($this->template);
 		$obj->_holderName = $this->getHolderName();
 
-		$func = $this->createClosureWithConfig($this->conf);
+		$func = $this->_createClosureWithConfig($obj, $this->conf);
 		$func($obj);
+		
+		$this->compileAnnotations($obj);
 
 		return $obj->compile();
 	}
 
-	public function createClosureWithConfig($config){
-		return function(HTMLView $view) use ($config){
+	public function _createClosureWithConfig(HTMLViewComponent $viewComponent, $config){
+		return function(HTMLView $view) use ($viewComponent, $config){
+			
+			if(isset($config["@extends"])){
+				$loader = \lasa\view\Engine::currentEngine()->getLoader();
+				$builder = $loader->getBuilder($config["@extends"]);
+				if(!$builder || !$builder instanceof self){
+					continue;
+				}
+				
+				//先に読み込んで拡張を行う
+				$func = $this->_createClosureWithConfig($viewComponent, $builder->conf);
+				$func($viewComponent);
+			}
+			
+			//まずはプロパティの処理を行う
 			foreach($config as $key => $value){
+					
+				if(empty($key))continue;
+				
+				//制御命令系
+				if($key[0] != "@"){
+					continue;
+				}
+				//レイアウト変数
+				if($key == "@layout"){
+					if(is_string($value)){
+						$viewComponent->layout($value);
+					}else if(is_array($value)){
+						if(isset($value[0])){
+							$layout_name = array_shift($value);
+							$viewComponent->layout($layout_name);
+						}
+						$viewComponent->layoutParams($value);
+					}
+				}
+				
+			} /* アノテーションの処理 */
+			
+			foreach($config as $key => $value){
+				
+				if(empty($key))continue;
+				
+				//制御命令系
+				if($key[0] == "@"){
+					continue;
+				}
 
 				if($value instanceof \Closure){
 					$view->apply($value);
@@ -86,7 +139,7 @@ class StandardViewBuilder extends ViewBuilder{
 					}else{
 						$conf = $value;
 					}
-					$view->addList($key, $this->createClosureWithConfig($conf));
+					$view->addList($key, $this->_createClosureWithConfig($view, $conf));
 					continue;
 				}
 
@@ -118,50 +171,69 @@ class StandardViewBuilder extends ViewBuilder{
 		};
 	}
 
-	public static function loadTemplate($path){
-
-		$path = realpath($path);
-		$dir = dirname($path);
-		$filename = basename($path);
-		list($name, $ext) = explode(".", $filename);
-
-		//同名の.htmlがあればそれを使う
-		$templatePath = $dir . DIRECTORY_SEPARATOR . $name . ".html";
-		if(file_exists($templatePath)){
-			return PHPTokenParser::getParser(file_get_contents($templatePath))->cleanup();
-		}
-
+	/**
+	 * コードを解析する
+	 * @param string $path
+	 */
+	private function parseTemplate($path){
+		//parserの作成
 		$codes = file_get_contents($path);
-
 		$parser = PHPTokenParser::getParser($codes);
-		$tokens = token_get_all($codes);
-		$tmp = "";
-		$flag = 0;
-		foreach($tokens as $token){
-			if(is_array($token)){
-				$type = $token[0];
-				$code = $token[1];
-			}else{
-				$type = null;
-				$code = $token;
-			}
-
-			if($flag > 1){
-				$tmp .= $code;
-				continue;
-			}
-
-			if($flag == 0 && $type == T_RETURN){
-				$flag++;
-				continue;
-			}
-
-			if($flag && $type == T_CLOSE_TAG){
-				$flag++;
+		
+		//コメントがあるかどうか判定する
+		$comment = $parser->getDocComment();
+		if($comment){
+			$this->parseAnnotations($comment);
+		}else{
+			echo $path;
+			echo " is not contain docComment\n";
+		}
+		
+		return $parser->getBody();
+	}
+	
+	/**
+	 * アノテーションを解析する
+	 */
+	private function parseAnnotations($docComment){
+		$tmp = [];
+		$values = [];
+		if(preg_match_all("#@([^\s]+)\s?(.*)#", $docComment, $tmp)){
+			foreach($tmp[1] as $index => $key){
+				$value = $tmp[2][$index];
+				if(strlen($value) < 1)$value = true;
+				$values[$key] = $value;
 			}
 		}
-
-		return $parser->cleanup($tmp);
+		
+		$this->annotations = $values;
+		
+		//extendsの処理
+		if(isset($this->annotations["extends"])){
+			$this->conf["@extends"] = $this->annotations["extends"];
+		}
+	}
+	
+	private function compileAnnotations(HTMLViewComponent $viewComponent){
+		$layout_name = null;
+		$layout_params = [];
+		foreach($this->annotations as $key => $value){
+			if($key == "layout"){
+				$layout_name = $value;
+			}
+			if(strpos($key, "layout.") !== false){
+				$layout_key = substr($key, strlen("layout."));
+				$layout_params[$layout_key] = $value;
+			}
+		}
+		
+		if($layout_name){
+			$viewComponent->layout($layout_name);
+		}
+		
+		if($layout_params){
+			$viewComponent->layoutParams($layout_params);
+		}
 	}
 
 

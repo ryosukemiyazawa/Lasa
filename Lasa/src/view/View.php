@@ -141,8 +141,23 @@ class View extends Render{
 	
 	private $_layout = null;
 	
-	public function layout($layout, $values = []){
-		$this->_layout = [$layout, $values];
+	/**
+	 * レイアウトを指定する
+	 * @param string $layout
+	 * @param array $values
+	 * @param boolean $override trueの時は強制的に指定する
+	 */
+	public function layout($layout, $values = [], $override = true){
+		
+		if($override){
+			$this->_layout = [$layout, $values];
+		}else{
+			if($this->_layout){
+				$this->_layout[1] = array_merge($values, $this->_layout[1]);
+			}else{
+				$this->_layout = [$layout, $values];
+			}
+		}
 		return $this;
 	}
 	
@@ -169,18 +184,23 @@ class View extends Render{
 		
 		View::notifyObserver($this->getName(), $this);
 		
+		//layout指定の場合
 		if($layout){
 			$html = $this->getContent();
 			View::section("@", $html);
 			$view = Engine::currentEngine()->load($layout, $values);
 			$view->display();
-		}else if($this->_layout){
-			$content = $this->getContent();
+			return;
+		}
+		
+		//レイアウト指定無しの場合
+		$content = $this->getContent();
+		if($this->_layout && $this->_layout[0]){
 			View::section("@", $content);
 			$view = Engine::currentEngine()->load($this->_layout[0], $this->_layout[1]);
 			$view->display();
 		}else{
-			$this->render();
+			echo $content;
 		}
 	}
 }
