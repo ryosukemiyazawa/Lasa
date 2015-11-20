@@ -50,6 +50,7 @@ class SelectMethodBuilder extends DAOMethodBuilder{
 		$query = Query::select($this->tableName);
 		$getByX = null;
 		$index = null;
+		$bind_keys = [];
 		
 		if(isset($annotations["index"])){
 			$index = $annotations["index"];
@@ -64,12 +65,34 @@ class SelectMethodBuilder extends DAOMethodBuilder{
 			}
 		}
 		
+		if(isset($annotations["where"])){
+			$query->where($annotations["where"]);
+			$getByX = null;
+			
+			preg_match_all("/:([^\s]+)/", $annotations["where"], $tmp);
+			foreach($tmp[1] as $key){
+				if(isset($params[$key])){
+					$binds[":" . $key] = $this->buildBindCode($key, $params);
+					continue;
+				}
+				$bind_keys[$key] = $key;
+			}
+		}
+		
 		foreach($this->model as $key => $column_array){
 			$value = array_shift($column_array);
 			$query->column($value);
 			
 			if($getByX && $getByX == $key){
 				$query->where($value."=:".$key);
+				if(isset($column_array["serialize"]) && $column_array["serialize"] == "json"){
+					$binds[":" . $key] = 'json_encode('.$this->buildBindCode($key, $params) . ")";
+				}else{
+					$binds[":" . $key] = $this->buildBindCode($key, $params);
+				}
+			}
+			
+			if(in_array($key, $bind_keys)){
 				if(isset($column_array["serialize"]) && $column_array["serialize"] == "json"){
 					$binds[":" . $key] = 'json_encode('.$this->buildBindCode($key, $params) . ")";
 				}else{
