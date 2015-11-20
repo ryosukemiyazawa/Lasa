@@ -389,7 +389,9 @@ class Application{
 				//引数が同じのを取得
 				if($count == $arg_count){
 					if($arg_regex){
-						if(preg_match("#^" . $arg_regex . "$#", $arg_value)){
+						if(preg_match("#^" . $arg_regex . "$#", $arg_value, $tmp)){
+							array_shift($tmp);
+							$args = $tmp;
 							return $func($this, $args);
 						}
 					}else{
