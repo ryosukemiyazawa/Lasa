@@ -80,8 +80,6 @@ class StandardViewBuilder extends ViewBuilder{
 			
 			foreach($config as $key => $value){
 				
-				if(empty($key))continue;
-				
 				//制御命令系
 				if($key[0] == "@"){
 					continue;

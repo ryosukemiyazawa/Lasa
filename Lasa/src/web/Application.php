@@ -331,6 +331,7 @@ class Application{
 		$url = "";
 		$baseUrl = $this->request()->base();
 		if($baseUrl == "/")$baseUrl = "";
+		if($baseUrl && $baseUrl[strlen($baseUrl)-1] == "/")$baseUrl = substr($baseUrl, 0, strlen($baseUrl)-1);
 		$suffix = ltrim($suffix, "/");
 		
 		if(strpos($suffix, "://") !== false){
