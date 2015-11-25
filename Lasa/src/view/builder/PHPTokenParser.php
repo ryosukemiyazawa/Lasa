@@ -60,7 +60,7 @@ class PHPTokenParser{
 			if(!is_array($token)){
 				if($state == "head"){
 					$head_lines[] = $token;
-				}else if($state = "code"){
+				}else if($state == "code"){
 					$code_lines[] = $token;
 				}else if($state == "body"){
 					$body_lines[] = $token;

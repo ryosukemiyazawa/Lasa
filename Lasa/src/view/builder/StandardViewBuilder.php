@@ -184,9 +184,6 @@ class StandardViewBuilder extends ViewBuilder{
 		$comment = $parser->getDocComment();
 		if($comment){
 			$this->parseAnnotations($comment);
-		}else{
-			echo $path;
-			echo " is not contain docComment\n";
 		}
 		
 		return $parser->getBody();
