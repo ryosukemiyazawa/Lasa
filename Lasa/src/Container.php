@@ -91,6 +91,8 @@ class Container{
 					$params = array_merge($params, $arg);
 				}else if(is_object($arg)){
 					$params[get_class($arg)] = $arg;
+				}else{
+					$params[] = $arg;
 				}
 			}
 		}

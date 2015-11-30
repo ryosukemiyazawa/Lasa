@@ -416,6 +416,7 @@ class Application{
 	 * エラーを発生して終了する
 	 * @param string $code
 	 * @param string $message
+	 * @return Application
 	 */
 	public function abort($code, $message = ""){
 		
@@ -453,6 +454,7 @@ class Application{
 			}
 		}
 		
+		return $this;
 	}
 	
 	/**
