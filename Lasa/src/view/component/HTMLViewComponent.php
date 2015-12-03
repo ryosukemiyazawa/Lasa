@@ -668,7 +668,7 @@ class HTMLComponent implements Component {
 			
 			foreach($opt as $key => $value){
 				if($key[0] == "@"){
-					$this->setAttribute(substr($key, 1), new HTMLAttributeComponent($value));
+					$this->setAttribute(substr($key, 1), new HTMLAttributeComponent($value, true));
 				}
 			}
 		}
