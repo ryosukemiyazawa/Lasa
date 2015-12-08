@@ -18,48 +18,65 @@ class DeleteMethodBuilder extends DAOMethodBuilder{
 			$params[$param->getName()] = $param;
 		}
 		
+		/* 準備 */
+		$annotations = $this->getMethodAnnotations($method);
+		
 		$scripts = [];
 		$query = Query::delete($this->tableName);
 		$getByX = null;
+		$bind_keys = [];
+		$binds = [];
+		
 		if(preg_match('/By([a-zA-Z0-9]*)$/',$methodName,$tmp)){
 			$getByX = lcfirst($tmp[1]);
 		}
 		
-		$binds = [];
-		$columns = [];
-		if($getByX){	//getbyXを指定した時は引数のみで作る
-			foreach($params as $name => $param){
-				if(!isset($this->model[$name])){
-					throw new \Exception("unknown property:" . $name);
+		//getByXがない場合は基本的にidを引数とすることにする
+		if($getByX == null){
+			$getByX = "id";
+		}
+		
+		if(isset($annotations["where"])){
+			$query->where($annotations["where"]);
+			$getByX = null;
+			
+			preg_match_all("/:([^\s]+)/", $annotations["where"], $tmp);
+			foreach($tmp[1] as $key){
+				if(isset($params[$key])){
+					$binds[":" . $key] = $this->buildBindCode($key, $params);
+					continue;
 				}
-				$columns[$name] = $this->model[$name];
-			}
-		}else{
-			if(isset($this->model["id"])){
-				$columns["id"] = $this->model["id"];
-			}else{
-				throw new \Exception("[". __CLASS__ . "]delete method is ambigious");
+				$bind_keys[$key] = $key;
 			}
 		}
 		
-		foreach($columns as $key => $column_array){
+		//ByXの部分がパラメーターにある場合の引数
+		if($getByX && isset($params[$getByX])){
+			$binds[":" . $getByX] = $this->buildBindCode($getByX, $params);
+		}
+		
+		//Modelが引数の場合のbindsの処理
+		foreach($this->model as $key => $column_array){
+			
 			$value = array_shift($column_array);
-			if($getByX){
-				if($key == "id"){
-					continue;
-				}else if($key == $getByX){
-					$query->where($value."=:".$value);
+			
+			if($getByX && $getByX == $key){
+				$query->where($value."=:".$key);
+				if(isset($column_array["serialize"]) && $column_array["serialize"] == "json"){
+					$binds[":" . $key] = 'json_encode('.$this->buildBindCode($key, $params) . ")";
 				}else{
-					$query->column($value);
-				}
-			}else{
-				if($key == "id"){
-					$query->where("id = :id");
-				}else{
-					$query->column($value);
+					$binds[":" . $key] = $this->buildBindCode($key, $params);
 				}
 			}
-			$binds[":" . $value] = $this->buildBindCode($key, $params);
+			
+			if(in_array($key, $bind_keys)){
+				if(isset($column_array["serialize"]) && $column_array["serialize"] == "json"){
+					$binds[":" . $key] = 'json_encode('.$this->buildBindCode($key, $params) . ")";
+				}else{
+					$binds[":" . $key] = $this->buildBindCode($key, $params);
+				}
+			}
+			
 		}
 		
 		$scripts[] = '$query = '.$query->dump().';' . "\n";

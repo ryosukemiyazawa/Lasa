@@ -400,7 +400,7 @@ class UpdateQueryFactory extends QueryFactory{
 		foreach($this->columns as $column){
 			if($column == "id")continue;
 			
-			$columns[] = $column . " = :" . $column;
+			$columns[] = $column . "=:" . $column;
 		}
 		$this->sql = implode(",", $columns);
 	}

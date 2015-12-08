@@ -51,10 +51,10 @@ trait Model{
 		}
 
 		$filepath = DB::getConfigure("cache_dir"). DIRECTORY_SEPARATOR . $daoClassName . ".php";
-		if(file_exists($filepath)){
-			require $filepath;
-			return DAO::get(__CLASS__);
-		}
+// 		if(file_exists($filepath)){
+// 			require $filepath;
+// 			return DAO::get(__CLASS__);
+// 		}
 
 		//DAOを作成する
 		if(class_exists(DAO::class)){
