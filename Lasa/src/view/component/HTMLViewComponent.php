@@ -268,6 +268,11 @@ class HTMLViewComponent extends HTMLView {
 			$toggleComponent = new ConditionalComponent();
 			$toggleComponent->setBaseClass(get_class($component));
 			$this->parse($id, $toggleComponent);
+			
+			// listをパースする
+			$loopComponent = new LoopComponent();
+			$loopComponent->setBaseComponent($component);
+			$this->parse($id, $loopComponent);
 		}
 		
 		if(strlen($prefix) > 0){
@@ -862,6 +867,41 @@ class ConditionalComponent extends HTMLComponent {
 			$start,
 			$end
 		];
+	}
+}
+
+class LoopComponent extends HTMLComponent {
+
+	private $baseComponent;
+
+	function setBaseComponent($baseComponent) {
+		$this->baseComponent = $baseComponent;
+	}
+
+	function isWrappedComponent() {
+		return true;
+	}
+
+	function getContent($id, $tag, $inner, $attributes) {
+		
+		/* @var $obj HTMLComponent */
+		$obj = clone($this->baseComponent);
+		$obj->_holderName = $id . "_list";
+		
+		$start = '<?php foreach($' . $this->_holderName . '->getArray("' . $id . '") as $array): $' . $id . '_list = new ' . VIEWHOLDER_CLASS . '(["'.$id.'" => $array]); ?>';
+		if($this->_innerStartNewLine)
+			$start .= "\n";
+		$end = '<?php endforeach; ?>';
+		if($this->_innerEndNewLine)$end = "\n" . $end;
+		if($this->_outerEndNewLine)$end .= "\n";
+		
+		$inner = $obj->getContent($id, $tag, $inner, $attributes);
+		
+		return $start . $inner . $end;
+	}
+
+	function getTagPrefix() {
+		return "list";
 	}
 }
 

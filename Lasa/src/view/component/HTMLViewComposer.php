@@ -36,6 +36,8 @@ class HTMLViewComposer extends HTMLComponent{
 			if(! $builder){
 				continue;
 			}
+			if(is_numeric($id))$id = "_v" . $id;
+			
 			$builder->setHolderName($id);
 			$res = $builder->compile($engine);
 			$res = $this->cleanupCode($id, $res, $conf);
