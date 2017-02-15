@@ -46,7 +46,7 @@ class StandardViewBuilder extends ViewBuilder{
 				$loader = \lasa\view\Engine::currentEngine()->getLoader();
 				$builder = $loader->getBuilder($config["@extends"]);
 				if(!$builder || !$builder instanceof self){
-					continue;
+					return;
 				}
 				
 				//先に読み込んで拡張を行う
