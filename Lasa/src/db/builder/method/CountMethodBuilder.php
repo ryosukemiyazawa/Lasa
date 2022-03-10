@@ -95,6 +95,7 @@ class CountMethodBuilder extends DAOMethodBuilder{
 		
 		$scripts[] = '$this->setLimit($oldLimit);';
 		$scripts[] = '$this->setOffset($oldOffset);';
+		$scripts[] = 'if(!$result)return 0;';
 		$scripts[] = 'if(count($result)<1)return 0;'  . "\n";
 		$scripts[] = 'return (int)$result[0]["'.$returnColumnName.'"];';
 		

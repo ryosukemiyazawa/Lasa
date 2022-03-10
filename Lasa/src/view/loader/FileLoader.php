@@ -1,64 +1,65 @@
 <?php
+
 namespace lasa\view\loader;
 
 use lasa\view\Render;
 
-class FileLoader implements LoaderInterface{
-	
+class FileLoader implements LoaderInterface {
+
 	protected $base = null;
-	
+
 	/**
 	 * @param string $baseDir
 	 */
-	public function __construct($baseDir){
+	public function __construct($baseDir) {
 		$this->base = $baseDir;
 	}
-	
-	
+
+
 	/* (non-PHPdoc)
 	 * @see \lasa\view\loader\LoaderInterface::getBuilder()
 	 */
 	public function getBuilder($name) {
 		list($scriptPath, $templatePath) = $this->getPath($name);
-		
+
 		//存在しない場合
-		if(!file_exists($scriptPath)){
+		if (!file_exists($scriptPath)) {
 			return null;
 		}
-		
+
 		//dummy view object
 		$view = new BlankRender();
-		
+
 		//種類を調べるために一度読み込みを行う
 		ob_start();
 		$res = include($scriptPath);
 		ob_end_clean();
-		
-		if(is_array($res)){
+
+		if (is_array($res)) {
 			$compiler = new \lasa\view\builder\StandardViewBuilder($res);
-			if(file_exists($templatePath)){
+			if ($templatePath && file_exists($templatePath)) {
 				$compiler->loadTemplate($templatePath);
-			}else{
+			} else {
 				$compiler->loadTemplate($scriptPath);
 			}
 			return $compiler;
 		}
-		
-		if($res instanceof \Closure){
+
+		if ($res instanceof \Closure) {
 			$compiler = new \lasa\view\builder\ClosureViewBuilder($res);
-			if(file_exists($templatePath)){
+			if (file_exists($templatePath)) {
 				$compiler->setTemplate(file_get_contents($templatePath));
-			}else{
+			} else {
 				$compiler->loadTemplate();
 			}
 			return $compiler;
 		}
-		
-		if($res === 1){
+
+		if ($res === 1) {
 			$compiler = new \lasa\view\builder\PlainViewBuilder($scriptPath);
 			return $compiler;
 		}
-		
+
 		return null;
 	}
 
@@ -75,37 +76,39 @@ class FileLoader implements LoaderInterface{
 	public function isChanged($name, $time) {
 		list($scriptPath, $templatePath) = $this->getPath($name);
 		$mtime = filemtime($scriptPath);
-		if($mtime > $time){ return true; }
-		
+		if ($mtime > $time) {
+			return true;
+		}
+
 		$mtime = ($templatePath) ? filemtime($templatePath) : 0;
-		if($mtime > $time){ return true; }
-		
+		if ($mtime > $time) {
+			return true;
+		}
+
 		return false;
 	}
-	
-	protected function getPath($name){
-		
+
+	protected function getPath($name) {
+
 		$dir = $this->base . DIRECTORY_SEPARATOR;
 		$scriptPath = $dir . $name . ".php";
 		$templatePath = $dir . $name . ".html";
-		
+
 		//HTMLだけでも可
-		if(!file_exists($scriptPath)){
+		if (!file_exists($scriptPath)) {
 			$scriptPath = $templatePath;
 			$templatePath = null;
 		}
-		
-		if(!file_exists($templatePath)){
+
+		if ($templatePath && !file_exists($templatePath)) {
 			$templatePath = null;
 		}
-		
+
 		return [$scriptPath, $templatePath];
 	}
-
 }
 
-class BlankRender extends Render{
-	public function __construct(){
-		
+class BlankRender extends Render {
+	public function __construct() {
 	}
 }

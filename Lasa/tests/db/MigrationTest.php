@@ -1,5 +1,6 @@
 <?php
 
+
 use lasa\db\migration\Migration;
 use lasa\db\DataSource;
 use lasa\db\migration\schema\Table;
@@ -11,69 +12,67 @@ use lasa\db\migration\schema\Table;
  *  3.書き換える
  *  をやってみるテストです
  */
-class MigrationTest extends PHPUnit_Framework_TestCase {
-	
+class MigrationTest extends \PHPUnit\Framework\TestCase {
+
 	use DBTestBase;
-	
-	function testCreateTableA(){
-		
-		$createTestTable = Migration::create("migration1", function(Migration $m){
-			$m->table("sample_table", function($table){
+
+	function testCreateTableA() {
+
+		$createTestTable = Migration::create("migration1", function (Migration $m) {
+			$m->table("sample_table", function ($table) {
 				$table->id();
 				$table->varchar("title", 25);
 				$table->text("content");
 				$table->timesptamps();
-					
 			});
 		});
-		
-		$createTestTable2 = Migration::create("migration2", function(Migration $m){
-			$m->table("sample_table2", function($table){
+
+		$createTestTable2 = Migration::create("migration2", function (Migration $m) {
+			$m->table("sample_table2", function ($table) {
 				$table->id();
 				$table->varchar("title", 25);
 				$table->text("content");
 				$table->timesptamps();
-					
 			});
 		});
-		
+
 		Migration::run([$createTestTable, $createTestTable2]);
-		
-		try{
+
+		try {
 			$res = $this->getDatasource()->executeQuery("select * from sample_table");
-		}catch(Exception $e){
+			$this->assertNotNull($res);
+		} catch (Exception $e) {
 			$this->fail("sample_tableの作成に失敗");
 		}
-		
-		try{
+
+		try {
 			$res = $this->getDatasource()->executeQuery("select * from sample_table2");
-		}catch(Exception $e){
+			$this->assertNotNull($res);
+		} catch (Exception $e) {
 			$this->fail("sample_table2の作成に失敗");
 		}
-		
 	}
-	
-	function testModifyTable(){
-		
-		$createTestTable = Migration::create("migration1", function(Migration $m){
-			$m->table("sample_table", function($table){
+
+	function testModifyTable() {
+
+		$createTestTable = Migration::create("migration1", function (Migration $m) {
+			$m->table("sample_table", function ($table) {
 				$table->id();
 				$table->varchar("title", 25);
 				$table->text("content");
 				$table->timesptamps();
-					
 			});
 		});
-		
-		$modifyTable = Migration::create("migration2", function(Migration $m){
-			$m->table("sample_table", function($table){
+
+		$modifyTable = Migration::create("migration2", function (Migration $m) {
+			$m->table("sample_table", function ($table) {
 				$table->text("fugafuga");
 			});
 		});
-		
+
 		//テーブル作成
 		Migration::run([$createTestTable, $modifyTable]);
-		
+
 		$columns = $this->getColumns("sample_table");
 		$this->assertArrayHasKey("id", $columns);
 		$this->assertArrayHasKey("title", $columns);
@@ -81,19 +80,18 @@ class MigrationTest extends PHPUnit_Framework_TestCase {
 		$this->assertArrayHasKey("fugafuga", $columns);
 		$this->assertArrayHasKey("created_at", $columns);
 		$this->assertArrayHasKey("updated_at", $columns);
-		
+
 		//カラムの削除
-		$createTestTable = Migration::create("migration1", function(Migration $m){
-			$m->table("drop_column_table", function($table){
+		$createTestTable = Migration::create("migration1", function (Migration $m) {
+			$m->table("drop_column_table", function ($table) {
 				$table->id();
 				$table->varchar("title", 25);
 				$table->text("content");
 				$table->timesptamps();
-					
 			});
 		});
-		$deleteColumn = Migration::create("migration3", function(Migration $m){
-			$m->table("sample_table", function(Table $table){
+		$deleteColumn = Migration::create("migration3", function (Migration $m) {
+			$m->table("sample_table", function (Table $table) {
 				$table->dropColumn("fugafuga");
 			});
 		});
@@ -102,15 +100,13 @@ class MigrationTest extends PHPUnit_Framework_TestCase {
 		$columns = $this->getColumns("sample_table");
 		$this->assertArrayNotHasKey("fugafuga", $columns, "カラムの削除に失敗");
 	}
-	
-	
+
+
 	/**
 	 * 全てのテーブルを削除する
-	 * @see PHPUnit_Framework_TestCase::tearDown()
+	 * @see TestCase::tearDown()
 	 */
-	protected function tearDown() {
+	protected function tearDown(): void {
 		$this->deleteAllTables();
 	}
-
-	
 }

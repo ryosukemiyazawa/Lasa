@@ -1,64 +1,66 @@
 <?php
+
+
 /*
  * DynamicViewTest.php
  */
-class DynamicViewTest extends PHPUnit_Framework_TestCase {
-	
+
+class DynamicViewTest extends \PHPUnit\Framework\TestCase {
+
 	use ViewTestBase;
-	
+
 	private $viewLoader;
-	
-	function setUp(){
+
+	function setUp(): void {
 		parent::setUp();
-		$this->viewLoader = $this->getViewLoader(__DIR__ . "/DynamicViewTest",[
+		$this->viewLoader = $this->getViewLoader(__DIR__ . "/DynamicViewTest", [
 			"debug" => false
 		]);
 	}
-	
+
 	/**
 	 * @test
 	 */
-	function 動的にViewを書き換えるテスト(){
-		
-		$view = $this->viewLoader->load("parent",[
+	function 動的にViewを書き換えるテスト() {
+
+		$view = $this->viewLoader->load("parent", [
 			"child_view_name" => "child_a",
 		]);
 		$content = $view->getContent();
-		$this->assertContains("This is child_a", $content);
-		
-		$view = $this->viewLoader->load("parent",[
+		$this->assertStringContainsString("This is child_a", $content);
+
+		$view = $this->viewLoader->load("parent", [
 			"child_view_name" => "child_b",
 			"label" => date("Y-m-d H:i:s")
 		]);
 		$content = $view->getContent();
-		$this->assertContains("This is child_b", $content);
+		$this->assertStringContainsString("This is child_b", $content);
 	}
-	
+
 	/**
 	 * @test
 	 * ただしdebug=trueの時はexceptionが発生する
 	 */
-	function 知らないViewを指定した時(){
-		$view = $this->viewLoader->load("parent",[
+	function 知らないViewを指定した時() {
+		$view = $this->viewLoader->load("parent", [
 			"child_view_name" => "unknown_view",
 		]);
-		
+
 		$content = $view->getContent();
-		$this->assertContains("render=", $content);
+		$this->assertStringContainsString("render=", $content);
 	}
-	
+
 	/**
 	 * @test
 	 */
-	function 動的にViewを渡しつつ値を書き換えるテスト(){
-		
-		$view = $this->viewLoader->load("parent",[
+	function 動的にViewを渡しつつ値を書き換えるテスト() {
+
+		$view = $this->viewLoader->load("parent", [
 			"child_view_name" => ["child_a", "label" => "hogehoge"],
 		]);
 		$content = $view->getContent();
-		
-		$this->assertContains("This is child_a", $content);
-		$this->assertContains("hogehoge", $content);
+
+		$this->assertStringContainsString("This is child_a", $content);
+		$this->assertStringContainsString("hogehoge", $content);
 	}
-	
 }
