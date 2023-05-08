@@ -1125,7 +1125,7 @@ class SelectComponent extends HTMLFormElementComponent {
 			$scripts[] = 'foreach($' . $this->_holderName . '->getArray("' . $id . '@items") as $key => $value){ ';
 			$scripts[] = '$selected=(strcmp($key,$_key)==0)?" selected":"";';
 			$scripts[] = '$key=htmlspecialchars($key);$value=htmlspecialchars($value);';
-			$scripts[] = 'echo "<option value=\"${key}\"${selected}>${value}</option>";';
+			$scripts[] = 'echo "<option value=\"{$key}\"{$selected}>{$value}</option>";';
 			$scripts[] = '} ';
 			$scripts[] = '?>';
 			$inner .= implode("", $scripts);

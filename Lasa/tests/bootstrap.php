@@ -63,7 +63,7 @@ trait DBTestBase {
 	function deleteAllTables() {
 		$tables = $this->getTableNames();
 		foreach ($tables as $table) {
-			$this->getDataSource()->executeUpdateQuery("drop table if exists ${table}");
+			$this->getDataSource()->executeUpdateQuery("drop table if exists {$table}");
 		}
 	}
 }

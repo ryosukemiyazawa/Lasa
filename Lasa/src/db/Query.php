@@ -193,7 +193,6 @@ class QueryFactory extends Query {
 	}
 
 	function table($table) {
-		$this->_table = $table;
 		$this->table = $table;
 		return $this;
 	}
@@ -315,7 +314,7 @@ class QueryFactory extends Query {
 		}
 
 		if (!empty($this->joins)) {
-			$table = $this->_table;
+			$table = $this->table;
 			foreach ($this->joins as $array) {
 				$join = ($array[2]) ? " " . $array[2] . " join " : " join ";
 				$table .= " " . $join . $array[0] . " on (" . $array[1] . ")";

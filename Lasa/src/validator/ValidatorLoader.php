@@ -73,12 +73,12 @@ class ValidatorLoader {
 
 		$func = null;
 		if (!$path || !file_exists($path)) {
-			throw new \Exception("unknown validation: ${name}");
+			throw new \Exception("unknown validation: {$name}");
 		}
 
 		$func = include($path);
 		if (!($func instanceof \Closure)) {
-			throw new \Exception("invalid validation: ${name}");
+			throw new \Exception("invalid validation: {$name}");
 		}
 		return $func;
 	}
